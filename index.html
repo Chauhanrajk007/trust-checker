@@ -2,16 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Website Trust Checker</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <div class="container">
+  <main class="app">
     <h1>Website Trust Checker</h1>
-    <p class="subtitle">
-      Paste a website URL to check how trustworthy it is.
-    </p>
+    <p class="tagline">Check if a website is safe before you trust it.</p>
 
     <form id="checkForm">
       <input
@@ -20,11 +19,11 @@
         placeholder="https://example.com"
         required
       />
-      <button type="submit">Check Trust</button>
+      <button type="submit">Check</button>
     </form>
 
-    <div id="result" class="hidden"></div>
-  </div>
+    <section id="result" class="hidden"></section>
+  </main>
 
   <script src="script.js"></script>
 </body>
