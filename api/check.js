@@ -1,5 +1,3 @@
-import fetch from "node-fetch";
-
 export default async function handler(req, res) {
   try {
     const url = req.query.url;
@@ -7,29 +5,31 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "URL required" });
     }
 
-    let score = 70; // start neutral-positive
+    let score = 70;
     let reasons = [];
 
-    // --- Signal buckets for pie chart ---
     let safePoints = 0;
     let neutralPoints = 0;
     let riskPoints = 0;
 
-    // HTTPS check (minor signal)
+    // HTTPS check
     if (url.startsWith("https://")) {
       safePoints += 10;
       reasons.push("Uses secure HTTPS connection");
     } else {
       riskPoints += 20;
-      reasons.push("Does not use HTTPS");
       score -= 20;
+      reasons.push("Does not use HTTPS");
     }
 
-    // --- Google Safe Browsing ---
+    // Google Safe Browsing
     const apiKey = process.env.GSB_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: "API key not configured" });
+    }
 
     const sbResponse = await fetch(
-      `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${AIzaSyBzPFXBFGRVBrxu8EsVXtjALOwXQjqUWDk}`,
+      `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -56,7 +56,6 @@ export default async function handler(req, res) {
     const sbData = await sbResponse.json();
 
     if (sbData.matches) {
-      // Strong negative signal
       riskPoints += 60;
       score -= 60;
       reasons.push("Flagged by Google Safe Browsing as dangerous");
@@ -65,14 +64,10 @@ export default async function handler(req, res) {
       reasons.push("Not flagged by Google Safe Browsing");
     }
 
-    // Clamp score
     score = Math.max(0, Math.min(100, score));
-
-    // Neutral bucket fills the rest
     neutralPoints = Math.max(0, 100 - (safePoints + riskPoints));
 
-    // Verdict
-    let verdict =
+    const verdict =
       score >= 80 ? "Likely Safe" :
       score >= 50 ? "Use Caution" :
       "High Risk";
