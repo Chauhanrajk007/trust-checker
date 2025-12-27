@@ -4,130 +4,83 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "URL required" });
   }
 
-  const lowerUrl = url.toLowerCase();
+  let score = 60;
+  let safe = [];
+  let caution = [];
 
-  let primaryInsights = [];
-  let warnings = [];
-  let basicInfo = [];
+  const u = url.toLowerCase();
 
-  // ---------- BASIC (LOW PRIORITY) ----------
-  if (lowerUrl.startsWith("https://")) {
-    basicInfo.push("Uses HTTPS encryption");
+  // HTTPS
+  if (u.startsWith("https://")) {
+    score += 10;
+    safe.push("Uses HTTPS encryption");
   } else {
-    warnings.push("Does not use HTTPS");
+    score -= 20;
+    caution.push("Does not use HTTPS");
   }
 
-  // ---------- FILE / ACTION INTENT ----------
-  if (lowerUrl.endsWith(".pdf")) {
-    primaryInsights.push("This link opens a PDF document");
+  // Google Safe Browsing (optional, safe fallback)
+  const apiKey = process.env.GSB_KEY;
+  if (apiKey) {
+    try {
+      const r = await fetch(
+        `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            client: { clientId: "trust", clientVersion: "1.0" },
+            threatInfo: {
+              threatTypes: [
+                "MALWARE",
+                "SOCIAL_ENGINEERING",
+                "UNWANTED_SOFTWARE"
+              ],
+              platformTypes: ["ANY_PLATFORM"],
+              threatEntryTypes: ["URL"],
+              threatEntries: [{ url }]
+            }
+          })
+        }
+      );
+
+      const data = await r.json();
+      if (data.matches) {
+        score -= 60;
+        caution.push("Flagged by Google Safe Browsing");
+      } else {
+        score += 30;
+        safe.push("Not flagged by Google Safe Browsing");
+      }
+    } catch {
+      caution.push("Safe Browsing check unavailable");
+    }
   }
 
+  // Gambling / betting penalty
   if (
-    lowerUrl.endsWith(".zip") ||
-    lowerUrl.endsWith(".exe") ||
-    lowerUrl.endsWith(".apk")
+    u.includes("bet") ||
+    u.includes("casino") ||
+    u.includes("gamble") ||
+    u.includes("stake")
   ) {
-    primaryInsights.push("This link triggers a file download");
-    warnings.push("Downloads are commonly used to deliver malware");
+    score -= 15;
+    caution.push("Gambling-related websites carry higher financial risk");
   }
 
-  // ---------- LOGIN / DATA COLLECTION ----------
-  const credentialWords = [
-    "login",
-    "signin",
-    "sign-in",
-    "verify",
-    "account",
-    "password",
-    "auth"
-  ];
+  // Clamp score
+  score = Math.max(0, Math.min(95, score));
 
-  if (credentialWords.some(w => lowerUrl.includes(w))) {
-    primaryInsights.push(
-      "This link likely leads to a login or account verification page"
-    );
-    warnings.push(
-      "Credential collection pages are a common phishing target"
-    );
-  }
+  let verdict =
+    score >= 90 ? "Very Low Risk" :
+    score >= 70 ? "Low Risk" :
+    score >= 50 ? "Use Caution" :
+    "High Risk";
 
-  // ---------- FINANCIAL / GAMBLING ----------
-  const moneyWords = [
-    "bet",
-    "casino",
-    "gamble",
-    "odds",
-    "sportsbook",
-    "stake",
-    "bonus",
-    "reward",
-    "withdraw",
-    "deposit"
-  ];
-
-  if (moneyWords.some(w => lowerUrl.includes(w))) {
-    primaryInsights.push(
-      "This link is related to financial activity or betting"
-    );
-    warnings.push(
-      "Financial links carry higher risk if the source is untrusted"
-    );
-  }
-
-  // ---------- URL SHORTENERS ----------
-  const shorteners = [
-    "bit.ly",
-    "tinyurl",
-    "t.co",
-    "goo.gl",
-    "rebrand.ly"
-  ];
-
-  if (shorteners.some(s => lowerUrl.includes(s))) {
-    primaryInsights.push(
-      "This link uses a URL shortener and hides the final destination"
-    );
-    warnings.push(
-      "Hidden destinations are frequently used in phishing and scams"
-    );
-  }
-
-  // ---------- REDIRECT INTENT (NO FETCH) ----------
-  if (lowerUrl.includes("redirect") || lowerUrl.includes("url=")) {
-    primaryInsights.push("This link may redirect you to another website");
-    warnings.push("Redirect chains are commonly used in scam links");
-  }
-
-  // ---------- SCAM-STYLE LANGUAGE ----------
-  const urgencyWords = [
-    "free",
-    "win",
-    "claim",
-    "urgent",
-    "limited",
-    "offer",
-    "act-now"
-  ];
-
-  if (urgencyWords.some(w => lowerUrl.includes(w))) {
-    primaryInsights.push(
-      "This link uses urgency or reward-based language"
-    );
-    warnings.push(
-      "Urgency is a common psychological tactic used in scams"
-    );
-  }
-
-  // ---------- FALLBACK ----------
-  if (primaryInsights.length === 0) {
-    primaryInsights.push(
-      "This link appears to be a standard informational website"
-    );
-  }
-
-  return res.status(200).json({
-    primaryInsights,
-    warnings,
-    basicInfo
+  return res.json({
+    score,
+    verdict,
+    safe,
+    caution
   });
 }
