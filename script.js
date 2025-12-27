@@ -4,6 +4,10 @@ const overlay = document.getElementById("overlay");
 const result = document.getElementById("result");
 const closeBtn = document.getElementById("closePopup");
 
+/* 🔒 FORCE HIDE POPUP ON PAGE LOAD (CRITICAL SAFETY NET) */
+overlay.classList.add("hidden");
+document.body.classList.remove("modal-open");
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -31,8 +35,8 @@ form.addEventListener("submit", async (e) => {
       <ul>${data.whyCaution.map(x => `<li>${x}</li>`).join("")}</ul>
 
       <p>
-        A score of ${data.score}% means this website is not known to be malicious,
-        but no website is ever completely risk-free.
+        A score of ${data.score}% means the site is not known to be malicious,
+        but some uncertainty always exists online.
       </p>
     `;
 
@@ -48,11 +52,13 @@ form.addEventListener("submit", async (e) => {
   btn.disabled = false;
 });
 
+/* Close popup */
 closeBtn.addEventListener("click", () => {
   overlay.classList.add("hidden");
   document.body.classList.remove("modal-open");
 });
 
+/* Close when clicking background */
 overlay.addEventListener("click", (e) => {
   if (e.target === overlay) {
     overlay.classList.add("hidden");
