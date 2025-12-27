@@ -8,23 +8,29 @@
 </head>
 <body>
 
-  <main class="app">
-    <h1>Website Trust Checker</h1>
-    <p class="tagline">Check if a website is safe before you trust it.</p>
+<header>
+  <h1>Website Trust Checker</h1>
+  <p>Check if a website is safe before you trust it</p>
+</header>
 
-    <form id="checkForm">
-      <input
-        id="urlInput"
-        type="url"
-        placeholder="https://example.com"
-        required
-      />
-      <button type="submit">Check</button>
-    </form>
+<main>
+  <form id="checkForm">
+    <input
+      id="urlInput"
+      type="url"
+      placeholder="https://example.com"
+      required
+    />
+    <button type="submit">Check</button>
+  </form>
 
-    <section id="result" class="hidden"></section>
-  </main>
+  <section id="result" class="hidden"></section>
+</main>
 
-  <script src="script.js"></script>
+<footer>
+  <p>This tool provides probabilistic results. Not a guarantee.</p>
+</footer>
+
+<script src="script.js"></script>
 </body>
 </html>
