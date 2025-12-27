@@ -25,22 +25,19 @@ form.addEventListener("submit", async (e) => {
       <h2>${data.verdict} (${data.score}%)</h2>
 
       <h3>Why this website appears safe</h3>
-      <ul>
-        ${data.whySafe.map(x => `<li>${x}</li>`).join("")}
-      </ul>
+      <ul>${data.whySafe.map(x => `<li>${x}</li>`).join("")}</ul>
 
       <h3>Why it is not rated 100%</h3>
-      <ul>
-        ${data.whyCaution.map(x => `<li>${x}</li>`).join("")}
-      </ul>
+      <ul>${data.whyCaution.map(x => `<li>${x}</li>`).join("")}</ul>
 
       <p>
-        A score of ${data.score}% means this site is not known to be malicious,
-        but some uncertainty always exists online.
+        A score of ${data.score}% means this website is not known to be malicious,
+        but no website is ever completely risk-free.
       </p>
     `;
 
     overlay.classList.remove("hidden");
+    document.body.classList.add("modal-open");
 
   } catch {
     alert("Error checking website");
@@ -53,4 +50,12 @@ form.addEventListener("submit", async (e) => {
 
 closeBtn.addEventListener("click", () => {
   overlay.classList.add("hidden");
+  document.body.classList.remove("modal-open");
+});
+
+overlay.addEventListener("click", (e) => {
+  if (e.target === overlay) {
+    overlay.classList.add("hidden");
+    document.body.classList.remove("modal-open");
+  }
 });
