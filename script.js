@@ -1,6 +1,8 @@
 const form = document.getElementById("checkForm");
 const btn = document.getElementById("checkBtn");
+const overlay = document.getElementById("overlay");
 const result = document.getElementById("result");
+const closeBtn = document.getElementById("closePopup");
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -19,7 +21,6 @@ form.addEventListener("submit", async (e) => {
     const res = await fetch(`/api/check?url=${encodeURIComponent(url)}`);
     const data = await res.json();
 
-    result.classList.remove("hidden");
     result.innerHTML = `
       <h2>${data.verdict} (${data.score}%)</h2>
 
@@ -34,10 +35,13 @@ form.addEventListener("submit", async (e) => {
       </ul>
 
       <p>
-        A score of ${data.score}% means this website is not known to be malicious,
-        but some uncertainty always exists on the internet.
+        A score of ${data.score}% means this site is not known to be malicious,
+        but some uncertainty always exists online.
       </p>
     `;
+
+    overlay.classList.remove("hidden");
+
   } catch {
     alert("Error checking website");
   }
@@ -45,4 +49,8 @@ form.addEventListener("submit", async (e) => {
   btn.textContent = "Check";
   btn.classList.remove("loading");
   btn.disabled = false;
+});
+
+closeBtn.addEventListener("click", () => {
+  overlay.classList.add("hidden");
 });
