@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     let whySafe = [];
     let whyCaution = [];
 
-    // HTTPS check
+    // ---------- HTTPS ----------
     if (url.startsWith("https://")) {
       score += 10;
       whySafe.push("Uses a secure HTTPS connection");
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
       whyCaution.push("Does not use HTTPS, which increases risk");
     }
 
-    // Google Safe Browsing
+    // ---------- GOOGLE SAFE BROWSING ----------
     const apiKey = process.env.GSB_KEY;
     if (!apiKey) {
       return res.status(500).json({ error: "API key not configured" });
@@ -63,8 +63,27 @@ export default async function handler(req, res) {
       );
     }
 
-    // Known brands bonus
-    const trusted = [
+    // ---------- RISKY CATEGORY CHECK (GAMBLING / BETTING) ----------
+    const riskyKeywords = [
+      "bet",
+      "betting",
+      "casino",
+      "gamble",
+      "odds",
+      "sportsbook",
+      "stake"
+    ];
+
+    const lowerUrl = url.toLowerCase();
+    if (riskyKeywords.some(k => lowerUrl.includes(k))) {
+      score -= 15;
+      whyCaution.push(
+        "Website appears related to betting or gambling, which carries higher financial risk"
+      );
+    }
+
+    // ---------- WELL-KNOWN DOMAIN BONUS ----------
+    const trustedDomains = [
       "google.com",
       "chatgpt.com",
       "openai.com",
@@ -72,14 +91,14 @@ export default async function handler(req, res) {
       "microsoft.com"
     ];
 
-    if (trusted.some(d => url.includes(d))) {
+    if (trustedDomains.some(d => lowerUrl.includes(d))) {
       score += 10;
       whySafe.push("Widely known and commonly trusted website");
     } else {
       whyCaution.push("Website reputation is limited or unknown");
     }
 
-    // Clamp score (never 100)
+    // ---------- FINAL SCORE ----------
     score = Math.max(0, Math.min(95, score));
 
     let verdict;
