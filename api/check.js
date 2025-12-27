@@ -5,22 +5,17 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "URL required" });
     }
 
-    let score = 60; // neutral base
-    let reasons = [];
+    let score = 60; // neutral starting point
+    let reasonsSafe = [];
+    let reasonsCaution = [];
 
-    let safePoints = 0;
-    let neutralPoints = 0;
-    let riskPoints = 0;
-
-    // ---------- HTTPS CHECK ----------
+    // ---------- HTTPS ----------
     if (url.startsWith("https://")) {
-      safePoints += 10;
       score += 10;
-      reasons.push("Uses secure HTTPS connection");
+      reasonsSafe.push("Uses a secure HTTPS connection");
     } else {
-      riskPoints += 25;
       score -= 25;
-      reasons.push("Does not use HTTPS");
+      reasonsCaution.push("Does not use HTTPS, which is unsafe");
     }
 
     // ---------- GOOGLE SAFE BROWSING ----------
@@ -57,19 +52,19 @@ export default async function handler(req, res) {
     const sbData = await sbResponse.json();
 
     if (sbData.matches) {
-      // 🚨 VERY STRONG NEGATIVE
-      riskPoints += 60;
       score -= 60;
-      reasons.push("Flagged by Google Safe Browsing as dangerous");
+      reasonsCaution.push(
+        "Flagged by Google Safe Browsing as potentially dangerous"
+      );
     } else {
-      // ✅ STRONG POSITIVE
-      safePoints += 30;
       score += 30;
-      reasons.push("Not flagged by Google Safe Browsing");
+      reasonsSafe.push(
+        "Not flagged by Google Safe Browsing (no known malware or phishing)"
+      );
     }
 
-    // ---------- BRAND TRUST BONUS (CONTROLLED) ----------
-    const trustedBrands = [
+    // ---------- WELL-KNOWN DOMAIN BONUS ----------
+    const trustedDomains = [
       "google.com",
       "chatgpt.com",
       "openai.com",
@@ -77,34 +72,31 @@ export default async function handler(req, res) {
       "microsoft.com"
     ];
 
-    if (trustedBrands.some(d => url.includes(d))) {
-      safePoints += 10;
+    if (trustedDomains.some(d => url.includes(d))) {
       score += 10;
-      reasons.push("Well-known and widely trusted domain");
+      reasonsSafe.push(
+        "Widely known and commonly trusted website"
+      );
+    } else {
+      reasonsCaution.push(
+        "Website reputation is unknown or limited"
+      );
     }
 
-    // ---------- SCORE CLAMP ----------
-    // Never show 100 — cap at 95
+    // ---------- FINAL SCORE ----------
     score = Math.max(0, Math.min(95, score));
 
-    neutralPoints = Math.max(0, 100 - (safePoints + riskPoints));
-
-    // ---------- VERDICT ----------
-    let verdict =
-      score >= 90 ? "Very Low Risk" :
-      score >= 70 ? "Low Risk" :
-      score >= 50 ? "Use Caution" :
-      "High Risk";
+    let verdict;
+    if (score >= 90) verdict = "Very Low Risk";
+    else if (score >= 70) verdict = "Low Risk";
+    else if (score >= 50) verdict = "Use Caution";
+    else verdict = "High Risk";
 
     return res.status(200).json({
       score,
       verdict,
-      reasons,
-      signals: {
-        safe: safePoints,
-        neutral: neutralPoints,
-        risk: riskPoints
-      }
+      whySafe: reasonsSafe,
+      whyCaution: reasonsCaution
     });
 
   } catch (err) {
