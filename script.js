@@ -4,102 +4,61 @@ const overlay = document.getElementById("overlay");
 const result = document.getElementById("result");
 const closeBtn = document.getElementById("closePopup");
 
-/* ---------- SAFETY: NEVER SHOW POPUP ON LOAD ---------- */
 overlay.classList.add("hidden");
-document.body.classList.remove("modal-open");
 
-/* ---------- FORM SUBMIT ---------- */
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const url = document.getElementById("urlInput").value.trim();
-
   if (!url.startsWith("http")) {
-    alert("Please enter the full URL including https://");
+    alert("Enter full URL including https://");
     return;
   }
 
-  // Button loading state
   btn.textContent = "Inspecting…";
-  btn.classList.add("loading");
   btn.disabled = true;
 
   try {
     const res = await fetch(`/api/inspect?url=${encodeURIComponent(url)}`);
-
-    // Backend failure
-    if (!res.ok) {
-      throw new Error("Backend error");
-    }
-
     const data = await res.json();
 
     if (data.error) {
-      alert("Unable to inspect this link right now.");
+      alert("Unable to inspect link");
       return;
     }
 
-    /* ---------- RENDER RESULT (PREMIUM LOGIC) ---------- */
     result.innerHTML = `
-      <h2>Link behavior insight</h2>
+      <h2>Link insight</h2>
 
-      <div style="margin-bottom:14px">
-        ${data.primaryInsights
-          .map(
-            (x) => `<div class="insight">🔍 ${x}</div>`
-          )
-          .join("")}
-      </div>
+      ${data.insights.map(i =>
+        `<div class="insight">🔍 ${i}</div>`
+      ).join("")}
 
-      ${
-        data.warnings && data.warnings.length
-          ? `<div style="margin-top:10px">
-              ${data.warnings
-                .map(
-                  (x) => `<div class="warning">⚠ ${x}</div>`
-                )
-                .join("")}
-            </div>`
-          : ""
-      }
+      ${data.warnings.map(w =>
+        `<div class="warning">⚠ ${w}</div>`
+      ).join("")}
 
-      ${
-        data.basicInfo && data.basicInfo.length
-          ? `<div style="margin-top:14px;font-size:13px;color:#64748b">
-              ${data.basicInfo.join(" · ")}
-            </div>`
-          : ""
-      }
-
-      <p style="margin-top:16px;font-size:12px;color:#64748b">
-        This analysis is based on link structure and common web behavior patterns.
+      <p style="font-size:12px;color:#64748b;margin-top:12px">
+        Analysis based on link structure only.
       </p>
     `;
 
-    // Show popup ONLY on success
     overlay.classList.remove("hidden");
-    document.body.classList.add("modal-open");
 
-  } catch (err) {
-    alert("Error inspecting link. Please try again later.");
+  } catch {
+    alert("Something went wrong");
   }
 
-  // Reset button
   btn.textContent = "Inspect";
-  btn.classList.remove("loading");
   btn.disabled = false;
 });
 
-/* ---------- CLOSE POPUP ---------- */
 closeBtn.addEventListener("click", () => {
   overlay.classList.add("hidden");
-  document.body.classList.remove("modal-open");
 });
 
-/* ---------- CLOSE ON BACKGROUND CLICK ---------- */
 overlay.addEventListener("click", (e) => {
   if (e.target === overlay) {
     overlay.classList.add("hidden");
-    document.body.classList.remove("modal-open");
   }
 });
