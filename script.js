@@ -4,7 +4,7 @@ const overlay = document.getElementById("overlay");
 const result = document.getElementById("result");
 const closeBtn = document.getElementById("closePopup");
 
-/* 🔒 FORCE HIDE POPUP ON PAGE LOAD (CRITICAL SAFETY NET) */
+/* Safety net */
 overlay.classList.add("hidden");
 document.body.classList.remove("modal-open");
 
@@ -17,7 +17,7 @@ form.addEventListener("submit", async (e) => {
     return;
   }
 
-  btn.textContent = "Checking...";
+  btn.textContent = "Checking…";
   btn.classList.add("loading");
   btn.disabled = true;
 
@@ -25,18 +25,40 @@ form.addEventListener("submit", async (e) => {
     const res = await fetch(`/api/check?url=${encodeURIComponent(url)}`);
     const data = await res.json();
 
+    const level =
+      data.score >= 90 ? "safe" :
+      data.score >= 70 ? "caution" :
+      "danger";
+
     result.innerHTML = `
-      <h2>${data.verdict} (${data.score}%)</h2>
+      <div class="status ${level}">
+        ${data.verdict}
+      </div>
 
-      <h3>Why this website appears safe</h3>
-      <ul>${data.whySafe.map(x => `<li>${x}</li>`).join("")}</ul>
+      <div class="confidence">
+        Confidence level: <strong>${data.score}%</strong>
+      </div>
 
-      <h3>Why it is not rated 100%</h3>
-      <ul>${data.whyCaution.map(x => `<li>${x}</li>`).join("")}</ul>
+      <p class="summary">
+        ${
+          data.score >= 90
+            ? "This website shows no active security warnings and appears safe."
+            : data.score >= 70
+            ? "No known threats detected, but some uncertainty exists."
+            : "This website shows signs of risk and should be avoided."
+        }
+      </p>
 
-      <p>
-        A score of ${data.score}% means the site is not known to be malicious,
-        but some uncertainty always exists online.
+      <div class="details">
+        <h3>Why this result was given</h3>
+        <ul>
+          ${data.whySafe.map(x => `<li>✔ ${x}</li>`).join("")}
+          ${data.whyCaution.map(x => `<li>⚠ ${x}</li>`).join("")}
+        </ul>
+      </div>
+
+      <p class="footnote">
+        Scores reflect known security signals only. No automated system can guarantee safety.
       </p>
     `;
 
@@ -52,13 +74,11 @@ form.addEventListener("submit", async (e) => {
   btn.disabled = false;
 });
 
-/* Close popup */
 closeBtn.addEventListener("click", () => {
   overlay.classList.add("hidden");
   document.body.classList.remove("modal-open");
 });
 
-/* Close when clicking background */
 overlay.addEventListener("click", (e) => {
   if (e.target === overlay) {
     overlay.classList.add("hidden");
