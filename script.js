@@ -1,84 +1,102 @@
-const form = document.getElementById("checkForm");
-const btn = document.getElementById("checkBtn");
+const form = document.getElementById("inspectForm");
+const btn = document.getElementById("inspectBtn");
 const overlay = document.getElementById("overlay");
 const result = document.getElementById("result");
 const closeBtn = document.getElementById("closePopup");
 
-/* Safety net */
+/* ---------- SAFETY: NEVER SHOW POPUP ON LOAD ---------- */
 overlay.classList.add("hidden");
 document.body.classList.remove("modal-open");
 
+/* ---------- FORM SUBMIT ---------- */
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const url = document.getElementById("urlInput").value.trim();
+
   if (!url.startsWith("http")) {
-    alert("Please enter full URL including https://");
+    alert("Please enter the full URL including https://");
     return;
   }
 
-  btn.textContent = "Checking…";
+  // Button loading state
+  btn.textContent = "Inspecting…";
   btn.classList.add("loading");
   btn.disabled = true;
 
   try {
-    const res = await fetch(`/api/check?url=${encodeURIComponent(url)}`);
+    const res = await fetch(`/api/inspect?url=${encodeURIComponent(url)}`);
+
+    // Backend failure
+    if (!res.ok) {
+      throw new Error("Backend error");
+    }
+
     const data = await res.json();
 
-    const level =
-      data.score >= 90 ? "safe" :
-      data.score >= 70 ? "caution" :
-      "danger";
+    if (data.error) {
+      alert("Unable to inspect this link right now.");
+      return;
+    }
 
+    /* ---------- RENDER RESULT (PREMIUM LOGIC) ---------- */
     result.innerHTML = `
-      <div class="status ${level}">
-        ${data.verdict}
+      <h2>Link behavior insight</h2>
+
+      <div style="margin-bottom:14px">
+        ${data.primaryInsights
+          .map(
+            (x) => `<div class="insight">🔍 ${x}</div>`
+          )
+          .join("")}
       </div>
 
-      <div class="confidence">
-        Confidence level: <strong>${data.score}%</strong>
-      </div>
+      ${
+        data.warnings && data.warnings.length
+          ? `<div style="margin-top:10px">
+              ${data.warnings
+                .map(
+                  (x) => `<div class="warning">⚠ ${x}</div>`
+                )
+                .join("")}
+            </div>`
+          : ""
+      }
 
-      <p class="summary">
-        ${
-          data.score >= 90
-            ? "This website shows no active security warnings and appears safe."
-            : data.score >= 70
-            ? "No known threats detected, but some uncertainty exists."
-            : "This website shows signs of risk and should be avoided."
-        }
-      </p>
+      ${
+        data.basicInfo && data.basicInfo.length
+          ? `<div style="margin-top:14px;font-size:13px;color:#64748b">
+              ${data.basicInfo.join(" · ")}
+            </div>`
+          : ""
+      }
 
-      <div class="details">
-        <h3>Why this result was given</h3>
-        <ul>
-          ${data.whySafe.map(x => `<li>✔ ${x}</li>`).join("")}
-          ${data.whyCaution.map(x => `<li>⚠ ${x}</li>`).join("")}
-        </ul>
-      </div>
-
-      <p class="footnote">
-        Scores reflect known security signals only. No automated system can guarantee safety.
+      <p style="margin-top:16px;font-size:12px;color:#64748b">
+        This analysis is based on link structure and common web behavior patterns.
       </p>
     `;
 
+    // Show popup ONLY on success
     overlay.classList.remove("hidden");
     document.body.classList.add("modal-open");
 
-  } catch {
-    alert("Error checking website");
+  } catch (err) {
+    alert("Error inspecting link. Please try again later.");
   }
 
-  btn.textContent = "Check";
+  // Reset button
+  btn.textContent = "Inspect";
   btn.classList.remove("loading");
   btn.disabled = false;
 });
 
+/* ---------- CLOSE POPUP ---------- */
 closeBtn.addEventListener("click", () => {
   overlay.classList.add("hidden");
   document.body.classList.remove("modal-open");
 });
 
+/* ---------- CLOSE ON BACKGROUND CLICK ---------- */
 overlay.addEventListener("click", (e) => {
   if (e.target === overlay) {
     overlay.classList.add("hidden");
