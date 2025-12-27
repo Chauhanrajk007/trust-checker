@@ -1,10 +1,6 @@
-const form = document.getElementById("inspectForm");
-const btn = document.getElementById("inspectBtn");
-const overlay = document.getElementById("overlay");
+const form = document.getElementById("checkForm");
+const btn = document.getElementById("checkBtn");
 const result = document.getElementById("result");
-const closeBtn = document.getElementById("closePopup");
-
-overlay.classList.add("hidden");
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -15,50 +11,35 @@ form.addEventListener("submit", async (e) => {
     return;
   }
 
-  btn.textContent = "Inspecting…";
+  btn.textContent = "Checking...";
   btn.disabled = true;
 
   try {
-    const res = await fetch(`/api/inspect?url=${encodeURIComponent(url)}`);
+    const res = await fetch(`/api/check?url=${encodeURIComponent(url)}`);
     const data = await res.json();
 
     if (data.error) {
-      alert("Unable to inspect link");
+      alert("Unable to check website");
       return;
     }
 
     result.innerHTML = `
-      <h2>Link insight</h2>
+      <h2>${data.verdict} (${data.score}%)</h2>
 
-      ${data.insights.map(i =>
-        `<div class="insight">🔍 ${i}</div>`
-      ).join("")}
+      <h3>Why it looks safe</h3>
+      <ul>${data.safe.map(x => `<li>✔ ${x}</li>`).join("")}</ul>
 
-      ${data.warnings.map(w =>
-        `<div class="warning">⚠ ${w}</div>`
-      ).join("")}
+      <h3>Why caution is advised</h3>
+      <ul>${data.caution.map(x => `<li>⚠ ${x}</li>`).join("")}</ul>
 
-      <p style="font-size:12px;color:#64748b;margin-top:12px">
-        Analysis based on link structure only.
+      <p style="font-size:12px;color:#666">
+        This is a probabilistic security check, not a guarantee.
       </p>
     `;
-
-    overlay.classList.remove("hidden");
-
   } catch {
-    alert("Something went wrong");
+    alert("Error checking website");
   }
 
-  btn.textContent = "Inspect";
+  btn.textContent = "Check";
   btn.disabled = false;
-});
-
-closeBtn.addEventListener("click", () => {
-  overlay.classList.add("hidden");
-});
-
-overlay.addEventListener("click", (e) => {
-  if (e.target === overlay) {
-    overlay.classList.add("hidden");
-  }
 });
