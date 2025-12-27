@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>Website Safety Check</title>
-
   <meta name="description" content="Check whether a website is safe using Google Safe Browsing." />
 
   <link rel="stylesheet" href="style.css" />
@@ -14,7 +13,7 @@
 
 <header>
   <h1>Website Safety Check</h1>
-  <p>Understand why a website is considered safe or risky</p>
+  <p>Check a website’s risk level before you trust it</p>
 </header>
 
 <main>
@@ -25,19 +24,20 @@
       placeholder="https://example.com"
       required
     />
-    <button id="checkBtn" type="submit">
-      Check
-    </button>
+    <button id="checkBtn" type="submit">Check</button>
   </form>
-
-  <section id="result" class="hidden"></section>
 </main>
 
+<!-- RESULT POPUP -->
+<div id="overlay" class="hidden">
+  <div id="popup">
+    <button id="closePopup">×</button>
+    <div id="result"></div>
+  </div>
+</div>
+
 <footer>
-  <p>
-    Results are based on Google Safe Browsing and basic security checks.
-    No website can be guaranteed 100% safe.
-  </p>
+  <span>Probabilistic results · Powered by Google Safe Browsing</span>
 </footer>
 
 <script src="script.js"></script>
