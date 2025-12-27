@@ -1,6 +1,13 @@
 const form = document.getElementById("checkForm");
 const btn = document.getElementById("checkBtn");
+
+const overlay = document.getElementById("overlay");
+const popup = document.getElementById("popup");
 const result = document.getElementById("result");
+const closeBtn = document.getElementById("closePopup");
+
+// NEVER show popup on load
+overlay.classList.add("hidden");
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -33,13 +40,29 @@ form.addEventListener("submit", async (e) => {
       <ul>${data.caution.map(x => `<li>⚠ ${x}</li>`).join("")}</ul>
 
       <p style="font-size:12px;color:#666">
-        This is a probabilistic security check, not a guarantee.
+        This is a probabilistic security check.
       </p>
     `;
+
+    // ✅ OPEN POPUP
+    overlay.classList.remove("hidden");
+
   } catch {
     alert("Error checking website");
   }
 
   btn.textContent = "Check";
   btn.disabled = false;
+});
+
+// Close popup
+closeBtn.addEventListener("click", () => {
+  overlay.classList.add("hidden");
+});
+
+// Close when clicking background
+overlay.addEventListener("click", (e) => {
+  if (e.target === overlay) {
+    overlay.classList.add("hidden");
+  }
 });
