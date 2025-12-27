@@ -5,116 +5,89 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "URL required" });
     }
 
-    let score = 60;
-    let whySafe = [];
-    let whyCaution = [];
+    let insights = [];
+    let warnings = [];
+
+    const lowerUrl = url.toLowerCase();
+
+    // ---------- FILE EXTENSION CHECK (VERY IMPORTANT) ----------
+    if (lowerUrl.endsWith(".pdf")) {
+      insights.push("Opens a PDF document");
+    }
+    if (
+      lowerUrl.endsWith(".zip") ||
+      lowerUrl.endsWith(".exe") ||
+      lowerUrl.endsWith(".apk")
+    ) {
+      warnings.push("Triggers a file download");
+    }
 
     // ---------- HTTPS ----------
     if (url.startsWith("https://")) {
-      score += 10;
-      whySafe.push("Uses a secure HTTPS connection");
+      insights.push("Uses secure HTTPS connection");
     } else {
-      score -= 25;
-      whyCaution.push("Does not use HTTPS, which increases risk");
+      warnings.push("Does not use HTTPS");
     }
 
-    // ---------- GOOGLE SAFE BROWSING ----------
-    const apiKey = process.env.GSB_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: "API key not configured" });
-    }
+    // ---------- HEAD REQUEST (BEST EFFORT) ----------
+    let contentType = "";
+    let statusCode = null;
 
-    const sbResponse = await fetch(
-      `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          client: {
-            clientId: "trust-checker",
-            clientVersion: "1.0"
-          },
-          threatInfo: {
-            threatTypes: [
-              "MALWARE",
-              "SOCIAL_ENGINEERING",
-              "UNWANTED_SOFTWARE",
-              "POTENTIALLY_HARMFUL_APPLICATION"
-            ],
-            platformTypes: ["ANY_PLATFORM"],
-            threatEntryTypes: ["URL"],
-            threatEntries: [{ url }]
-          }
-        })
+    try {
+      const headRes = await fetch(url, {
+        method: "HEAD",
+        redirect: "manual"
+      });
+
+      statusCode = headRes.status;
+      contentType = headRes.headers.get("content-type") || "";
+
+      if (statusCode >= 300 && statusCode < 400) {
+        warnings.push("This link redirects to another page");
       }
-    );
-
-    const sbData = await sbResponse.json();
-
-    if (sbData.matches) {
-      score -= 60;
-      whyCaution.push(
-        "Flagged by Google Safe Browsing as potentially dangerous"
-      );
-    } else {
-      score += 30;
-      whySafe.push(
-        "Not flagged by Google Safe Browsing (no known malware or phishing)"
-      );
+    } catch {
+      // HEAD often fails — ignore
     }
 
-    // ---------- RISKY CATEGORY CHECK (GAMBLING / BETTING) ----------
-    const riskyKeywords = [
-      "bet",
-      "betting",
-      "casino",
-      "gamble",
-      "odds",
-      "sportsbook",
-      "stake"
-    ];
-
-    const lowerUrl = url.toLowerCase();
-    if (riskyKeywords.some(k => lowerUrl.includes(k))) {
-      score -= 15;
-      whyCaution.push(
-        "Website appears related to betting or gambling, which carries higher financial risk"
-      );
+    // ---------- CONTENT TYPE FALLBACK ----------
+    if (contentType.includes("application/pdf")) {
+      insights.push("Opens a PDF document");
+    } else if (
+      contentType.includes("application/zip") ||
+      contentType.includes("application/octet-stream")
+    ) {
+      warnings.push("Triggers a file download");
+    } else if (contentType.includes("text/html")) {
+      insights.push("Opens a normal web page");
     }
 
-    // ---------- WELL-KNOWN DOMAIN BONUS ----------
-    const trustedDomains = [
-      "google.com",
-      "chatgpt.com",
-      "openai.com",
-      "github.com",
-      "microsoft.com"
-    ];
+    // ---------- SMALL HTML FETCH FOR FORMS ----------
+    try {
+      if (contentType.includes("text/html")) {
+        const pageRes = await fetch(url);
+        const html = (await pageRes.text()).slice(0, 6000);
 
-    if (trustedDomains.some(d => lowerUrl.includes(d))) {
-      score += 10;
-      whySafe.push("Widely known and commonly trusted website");
-    } else {
-      whyCaution.push("Website reputation is limited or unknown");
+        if (html.includes("<form")) {
+          warnings.push("Contains a form (may collect user input)");
+        }
+        if (html.includes("type=\"password\"")) {
+          warnings.push("Contains a password field (login page)");
+        }
+      }
+    } catch {
+      // Ignore blocked pages
     }
 
-    // ---------- FINAL SCORE ----------
-    score = Math.max(0, Math.min(95, score));
-
-    let verdict;
-    if (score >= 90) verdict = "Very Low Risk";
-    else if (score >= 70) verdict = "Low Risk";
-    else if (score >= 50) verdict = "Use Caution";
-    else verdict = "High Risk";
+    if (insights.length === 0 && warnings.length === 0) {
+      insights.push("No unusual behavior detected");
+    }
 
     res.status(200).json({
-      score,
-      verdict,
-      whySafe,
-      whyCaution
+      insights,
+      warnings
     });
 
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: "Unable to inspect link" });
   }
 }
