@@ -2,6 +2,7 @@
   box-sizing: border-box;
 }
 
+/* Base */
 body {
   margin: 0;
   font-family: system-ui, -apple-system;
@@ -54,13 +55,10 @@ button.loading {
   cursor: not-allowed;
 }
 
-/* Overlay */
+/* Overlay (modal background) */
 #overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   background: rgba(0,0,0,0.4);
   display: flex;
   align-items: center;
@@ -68,6 +66,7 @@ button.loading {
   z-index: 9999;
 }
 
+/* Popup */
 #popup {
   background: white;
   width: 92%;
@@ -80,6 +79,7 @@ button.loading {
   animation: popupIn 0.25s ease;
 }
 
+/* Close button */
 #closePopup {
   position: absolute;
   top: 12px;
@@ -104,13 +104,14 @@ footer {
 
 /* Utilities */
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 body.modal-open {
   overflow: hidden;
 }
 
+/* Animation */
 @keyframes popupIn {
   from {
     opacity: 0;
