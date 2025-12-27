@@ -1,16 +1,30 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
   <title>Website Trust Checker</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Check if a Website is Safe</h1>
 
-  <input id="urlInput" placeholder="https://example.com">
-  <button onclick="check()">Check Trust</button>
+  <div class="container">
+    <h1>Website Trust Checker</h1>
+    <p class="subtitle">
+      Paste a website URL to check how trustworthy it is.
+    </p>
 
-  <div id="result"></div>
+    <form id="checkForm">
+      <input
+        id="urlInput"
+        type="url"
+        placeholder="https://example.com"
+        required
+      />
+      <button type="submit">Check Trust</button>
+    </form>
+
+    <div id="result" class="hidden"></div>
+  </div>
 
   <script src="script.js"></script>
 </body>
