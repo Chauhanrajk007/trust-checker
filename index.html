@@ -3,22 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Website Trust Checker</title>
 
   <!-- SEO -->
-  <meta name="description" content="Check if a website is safe using Google Safe Browsing data." />
+  <meta name="description" content="Free website safety checker using Google Safe Browsing. Check if a link is safe or risky." />
+  <meta name="keywords" content="is this website safe, scam checker, website trust score" />
 
-  <!-- Styles -->
   <link rel="stylesheet" href="style.css" />
-
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
 <header>
   <h1>Website Trust Checker</h1>
-  <p>Check whether a website is safe before you trust it</p>
+  <p>Check a website’s risk level before you trust it</p>
 </header>
 
 <main>
@@ -32,13 +31,18 @@
     <button type="submit">Check</button>
   </form>
 
-  <section id="result" class="hidden"></section>
+  <div id="spinner" class="spinner hidden"></div>
+
+  <section id="result" class="hidden">
+    <canvas id="scoreChart"></canvas>
+    <div id="resultText"></div>
+  </section>
 </main>
 
 <footer>
   <p>
-    This tool provides probabilistic results based on Google Safe Browsing.
-    It is not a guarantee.
+    Results are probabilistic and based on Google Safe Browsing.
+    No website can be guaranteed 100% safe.
   </p>
 </footer>
 
