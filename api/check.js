@@ -5,20 +5,20 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "URL required" });
     }
 
-    let score = 60; // neutral starting point
-    let reasonsSafe = [];
-    let reasonsCaution = [];
+    let score = 60;
+    let whySafe = [];
+    let whyCaution = [];
 
-    // ---------- HTTPS ----------
+    // HTTPS check
     if (url.startsWith("https://")) {
       score += 10;
-      reasonsSafe.push("Uses a secure HTTPS connection");
+      whySafe.push("Uses a secure HTTPS connection");
     } else {
       score -= 25;
-      reasonsCaution.push("Does not use HTTPS, which is unsafe");
+      whyCaution.push("Does not use HTTPS, which increases risk");
     }
 
-    // ---------- GOOGLE SAFE BROWSING ----------
+    // Google Safe Browsing
     const apiKey = process.env.GSB_KEY;
     if (!apiKey) {
       return res.status(500).json({ error: "API key not configured" });
@@ -53,18 +53,18 @@ export default async function handler(req, res) {
 
     if (sbData.matches) {
       score -= 60;
-      reasonsCaution.push(
+      whyCaution.push(
         "Flagged by Google Safe Browsing as potentially dangerous"
       );
     } else {
       score += 30;
-      reasonsSafe.push(
+      whySafe.push(
         "Not flagged by Google Safe Browsing (no known malware or phishing)"
       );
     }
 
-    // ---------- WELL-KNOWN DOMAIN BONUS ----------
-    const trustedDomains = [
+    // Known brands bonus
+    const trusted = [
       "google.com",
       "chatgpt.com",
       "openai.com",
@@ -72,18 +72,14 @@ export default async function handler(req, res) {
       "microsoft.com"
     ];
 
-    if (trustedDomains.some(d => url.includes(d))) {
+    if (trusted.some(d => url.includes(d))) {
       score += 10;
-      reasonsSafe.push(
-        "Widely known and commonly trusted website"
-      );
+      whySafe.push("Widely known and commonly trusted website");
     } else {
-      reasonsCaution.push(
-        "Website reputation is unknown or limited"
-      );
+      whyCaution.push("Website reputation is limited or unknown");
     }
 
-    // ---------- FINAL SCORE ----------
+    // Clamp score (never 100)
     score = Math.max(0, Math.min(95, score));
 
     let verdict;
@@ -92,14 +88,14 @@ export default async function handler(req, res) {
     else if (score >= 50) verdict = "Use Caution";
     else verdict = "High Risk";
 
-    return res.status(200).json({
+    res.status(200).json({
       score,
       verdict,
-      whySafe: reasonsSafe,
-      whyCaution: reasonsCaution
+      whySafe,
+      whyCaution
     });
 
   } catch (err) {
-    return res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: "Server error" });
   }
 }
